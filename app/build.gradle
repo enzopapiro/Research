@@ -9,6 +9,7 @@
 plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
+    id 'java'
 }
 
 repositories {
@@ -23,9 +24,35 @@ dependencies {
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:30.1.1-jre'
     implementation 'org.agrona:agrona:1.14.0'
+    implementation 'org.openjdk.jol:jol-cli:0.16'
+}
+
+run {
+    jvmArgs = ['-XX:-RestrictContended']
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ["--add-exports", "java.base/jdk.internal.vm.annotation=ALL-UNNAMED"]
 }
 
 application {
     // Define the main class for the application.
     mainClass = 'ep.research.App'
+}
+
+/* EP Use this task to run an arbitrary java class, if contended annotations need to be observed supply -Pobserve-contended at the command line */
+task runmain(type: JavaExec) {
+    group = "Execution"
+    description = "Run option main class with JavaExecTask"
+    classpath = sourceSets.main.runtimeClasspath
+
+    if (project.hasProperty('observe-contended')) {
+        jvmArgs = ['-XX:-RestrictContended']
+    }
+
+    if (project.hasProperty('mainclass')) {
+        mainClass.set(project.getProperty("mainclass"))
+    } else {
+        mainClass.set('ep.research.App')
+    }
 }
